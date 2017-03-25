@@ -27,10 +27,20 @@ void draw() {
   for(int i = 0; i < connections.size(); i++) {
     connections.get(i).render();
   }
-  popMatrix();
+  
+  ArrayList<PVector> nodeScreenPositions = new ArrayList<PVector>();
+  
   for(int i = 0; i < nodes.size(); i++) {
-    text("" + nodes.get(i).isMouseOver(), nodes.get(i).sX(), nodes.get(i).sY());
+    nodeScreenPositions.add(new PVector(round(nodes.get(i).sX()), round(nodes.get(i).sY())));
+    nodeScreenPositions.add(new PVector(nodes.get(i).lX, nodes.get(i).hX));
   }
+  
+  popMatrix();
+  
+  for(int i = 0; i < nodeScreenPositions.size(); i++) {
+    text((i +1) + ": " + nodeScreenPositions.get(i).toString() +  " " + nodes.get(floor(i/2)).isMouseOver(), 10, 40*i + 20);
+  }
+  
 }
 
 void mousePressed() {
@@ -61,23 +71,45 @@ void dataSetup() {
 }
 
 class Node {
-  int x, y, z, size;
+  int x, y, z, s;
+  float hX = 0, hY = 0, lX = 0, lY = 0;
+  
   Node(int xx, int yy, int zz) {
     x = xx; y = yy; z = zz;
-    size = 40;
+    s = 40;
   }
   
   void render() {
+    hX = hY = 0;
+    lX = lY = width;
+    PVector[] corners = new PVector[8];
+    corners[0] = new PVector(x - s/2, y - s/2, z - s/2); //top back left
+    corners[1] = new PVector(x - s/2, y + s/2, z - s/2); //top back right
+    corners[2] = new PVector(x - s/2, y - s/2, z + s/2); //top front left
+    corners[3] = new PVector(x - s/2, y + s/2, z + s/2); //top front right
+    corners[4] = new PVector(x + s/2, y - s/2, z - s/2); //bottom back left
+    corners[5] = new PVector(x + s/2, y + s/2, z - s/2); //bottom back right
+    corners[6] = new PVector(x + s/2, y - s/2, z + s/2); //bottom front left
+    corners[7] = new PVector(x + s/2, y + s/2, z + s/2); //bottom front right
+    
+    for(int i = 0; i < 7; i++) {
+      if(sxfv(corners[i]) > hX) hX = sxfv(corners[i]);
+      if(sxfv(corners[i]) < lX) lX = sxfv(corners[i]);
+      if(syfv(corners[i]) > hY) hY = syfv(corners[i]);
+      if(syfv(corners[i]) < lY) lY = syfv(corners[i]);
+    }
+    
     pushMatrix();
       translate(x,y,z);
-      stroke(255);
+      if(isMouseOver()) stroke(0); else stroke(255);
       noFill();
-      box(size);
+      box(s);
     popMatrix();
+    
   }
   
   boolean isMouseOver() {
-    return false;
+    return (mouseX > lX && mouseX < hX && mouseY > lY && mouseY < hY);
   }
   
   float sX() {
@@ -99,4 +131,14 @@ class Connection {
     stroke(255);
     line(x1, y1, z1, x2, y2, z2);
   }
+}
+
+// get rounded float screen x from 3d PVector
+float sxfv(PVector v) {
+  return round(screenX(v.x, v.y, v.z));
+}
+
+// get rounded float screen y from 3d PVector
+float syfv(PVector v) {
+  return round(screenY(v.x, v.y, v.z));
 }
